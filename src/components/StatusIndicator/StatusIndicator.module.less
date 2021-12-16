@@ -1,0 +1,32 @@
+.statusIndicator {
+    height: 8px;
+    width: 8px;
+    background: rgb(0, 206, 158);
+    box-shadow: 0 0 0 0 rgba(51, 217, 178, 1);
+    border: 1px solid rgb(0, 206, 158);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.pulse {
+    animation-name: pulse;
+    animation-duration: 4s;
+    animation-iteration-count: infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(51, 217, 178, 0.7);
+    }
+      
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 7px rgba(51, 217, 178, 0);
+    }
+      
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(51, 217, 178, 0);
+    }
+}

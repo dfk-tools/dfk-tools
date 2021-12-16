@@ -1,0 +1,30 @@
+.navbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: #ffffff;
+
+    .navbarBrand {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 1;
+        padding-left: 20px;
+        padding-right: 20px;
+        margin: 0 -4px;
+        border-bottom: 1px solid #f0f0f0;
+
+        > * {
+            margin: 0 4px;
+        }
+    }
+
+    .navbarMenu {
+        flex-grow: 1;
+
+        .navbarMenuItem {
+            &::after {
+                border-bottom: none !important;
+            }
+        }
+    }
+}
