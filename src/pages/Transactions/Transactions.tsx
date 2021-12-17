@@ -1,6 +1,4 @@
 import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
-import { Generator, Report } from '@dfk-tools/transaction-history-report-generator';
-import { contracts } from '@dfk-tools/transaction-history-report-generator/consts';
 import { fromBech32 } from '@harmony-js/crypto';
 import { isAddress, isBech32Address } from '@harmony-js/utils';
 import Button from 'antd/lib/button';
@@ -11,12 +9,7 @@ import Form from 'antd/lib/form';
 import Input from 'antd/lib/input';
 import Menu from 'antd/lib/menu';
 import PageHeader from 'antd/lib/page-header';
-import Popover from 'antd/lib/popover';
-import Radio from 'antd/lib/radio';
-import Result from 'antd/lib/result';
 import Row from 'antd/lib/row';
-import Select from 'antd/lib/select';
-import Space from 'antd/lib/space';
 import Statistic from 'antd/lib/statistic';
 import Table from 'antd/lib/table';
 import Tabs from 'antd/lib/tabs';
@@ -27,12 +20,16 @@ import React, {
     useState
 } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import contracts, { QuestCoreV2 } from '~blockchain/contracts';
+import Generator from '~blockchain/Generator';
+import QuestChart from '~components/QuestChart';
+import Transaction from '~types/Transaction';
+import getContractNameFromAddress from '~utilities/getContractNameFromAddress';
+import getExplorerUrl from '~utilities/getExplorerUrl';
 
 type GeneratorFormValues = {
     player: string
 };
-
-const contractKeys = Object.keys(contracts);
 
 function Transactions(props: RouteComponentProps): JSX.Element {
     const [generator, setGenerator] = useState<Generator>(new Generator());
@@ -41,25 +38,25 @@ function Transactions(props: RouteComponentProps): JSX.Element {
         player: ''
     });
 
-    const [report, setReport] = useState<Report>();
-    const [reportGenerating, setReportGenerating] = useState<boolean>(false);
+    const [transactions, setTransactions] = useState<Transaction[]>();
+    const [transactionsFetching, setTransactionsFetching] = useState<boolean>(false);
 
     useEffect(() => {
         const playerIsBech32Address = isBech32Address(generatorFormValues.player);
         const playerIsChecksumAddress = isAddress(generatorFormValues.player);
-        if (playerIsBech32Address || playerIsChecksumAddress) generateReport(generatorFormValues.player);
+        if (playerIsBech32Address || playerIsChecksumAddress) getTransactions(generatorFormValues.player);
     }, [generatorFormValues.player]);
 
-    async function generateReport(player: string) {
-        if (!reportGenerating) {
-            setReportGenerating(true);
+    async function getTransactions(player: string) {
+        if (!transactionsFetching) {
+            setTransactionsFetching(true);
             try {
                 const generatorReport = await generator.report(player);
-                setReport(generatorReport);
+                setTransactions(generatorReport);
             } catch (e) {
                 console.error(e);
             }
-            setReportGenerating(false);
+            setTransactionsFetching(false);
         }
     }
 
@@ -67,10 +64,10 @@ function Transactions(props: RouteComponentProps): JSX.Element {
         sumValue: string;
         mostFrequentTo: string | undefined;
     } | undefined = undefined;
-    if (report && report.transactions.length > 0) {
-        const transactionsTo = report.transactions.map(o => o.to);
+    if (transactions && transactions.length > 0) {
+        const transactionsTo = transactions.map(o => o.to);
         transactionStatistics = {
-            sumValue: report.transactions
+            sumValue: transactions
                 .map(o => new BigNumber(o.value).div(1e+18))
                 .reduce((pv, cv) => pv.plus(cv)).toFixed(2),
             mostFrequentTo: transactionsTo
@@ -84,29 +81,6 @@ function Transactions(props: RouteComponentProps): JSX.Element {
     return (
         <div className="container">
             <Card
-                extra={(
-                    <Dropdown
-                        overlay={(
-                            <Menu>
-                                <Menu.Item
-                                    key="exportAsCsv"
-                                    onClick={() => {
-                                        if (report) report.exportAsCsv('data.csv');
-                                    }}
-                                >
-                                    Export as .csv
-                                </Menu.Item>
-                            </Menu>
-                        )}
-                        overlayStyle={{ borderRadius: '8px' }}
-                    >
-                        <Button
-                            icon={<DownloadOutlined />}
-                            shape="circle"
-                            type="primary"
-                        />
-                    </Dropdown>
-                )}
                 style={{ borderRadius: '8px' }}
                 title={(
                     <PageHeader
@@ -131,7 +105,7 @@ function Transactions(props: RouteComponentProps): JSX.Element {
                                 style={{ marginBottom: '0' }}
                             >
                                 <Input
-                                    disabled={reportGenerating}
+                                    disabled={transactionsFetching}
                                     placeholder="Enter the Bech32 or Ethereum-style address of a player"
                                     size="large"
                                     style={{ borderRadius: '8px' }}
@@ -143,7 +117,7 @@ function Transactions(props: RouteComponentProps): JSX.Element {
 
                 <Tabs>
                     <Tabs.TabPane
-                        disabled={!report || reportGenerating}
+                        disabled={!transactions || transactionsFetching}
                         key="data"
                         tab="Data"
                     >
@@ -198,6 +172,10 @@ function Transactions(props: RouteComponentProps): JSX.Element {
                                 {
                                     dataIndex: 'to',
                                     ellipsis: true,
+                                    filters: Object.keys(contracts).map(contract => ({
+                                        text: getContractNameFromAddress(contracts[contract as keyof typeof contracts]),
+                                        value: contracts[contract as keyof typeof contracts]
+                                    })),
                                     key: 'to',
                                     render: value => {
                                         const checksum = isBech32Address(value) ? fromBech32(value) : value;
@@ -210,7 +188,8 @@ function Transactions(props: RouteComponentProps): JSX.Element {
                                         )
                                     },
                                     title: getLabelFromTransactionKey('to'),
-                                    width: 200
+                                    width: 200,
+                                    onFilter: (value, record) => fromBech32(record.to) === value
                                 },
                                 {
                                     dataIndex: 'value',
@@ -334,18 +313,18 @@ function Transactions(props: RouteComponentProps): JSX.Element {
                                 }
                                 */
                             ]}
-                            dataSource={report?.transactions}
-                            loading={reportGenerating}
+                            dataSource={transactions}
+                            loading={transactionsFetching}
                             pagination={{
                                 showTotal: (total, range) => `Showing ${range[0]} to ${range[1]} of ${total} items`
                             }}
                             rowKey={row => row.hash}
-                            scroll={{ y: 300 }}
+                            scroll={{ y: 400 }}
                             showSorterTooltip={false}
                         />
                     </Tabs.TabPane>
                     <Tabs.TabPane
-                        disabled={!report || reportGenerating}
+                        disabled={!transactions || transactionsFetching}
                         key="statistics"
                         tab="Statistics"
                     >
@@ -371,6 +350,15 @@ function Transactions(props: RouteComponentProps): JSX.Element {
                                 )}
                             </Row>
                         )}
+                    </Tabs.TabPane>
+                    <Tabs.TabPane
+                        disabled={!transactions || transactionsFetching}
+                        key="quests"
+                        tab="Quests"
+                    >
+                        <QuestChart
+                            transactions={transactions?.filter(transaction => fromBech32(transaction.to) === QuestCoreV2.address)}
+                        />
                     </Tabs.TabPane>
                 </Tabs>
             </Card>
@@ -419,24 +407,6 @@ function getLabelFromTransactionKey(key: string): string {
         default:
             return 'N/A';
     }
-}
-
-function getContractNameFromAddress(address: string) {
-    const checksum = isBech32Address(address) ? fromBech32(address) : address;
-    let contractName: string | undefined = undefined;
-    contractKeys.forEach(contractKey => {
-        const contractValue = contracts[contractKey as keyof typeof contracts];
-        const contractChecksum = isBech32Address(contractValue) ? fromBech32(contractValue) : contractValue;
-        if (checksum === contractChecksum) {
-            contractName = contractKey;
-            return;
-        }
-    });
-    return contractName;
-}
-
-function getExplorerUrl(value: string, prefix?: string) {
-    return `https://explorer.harmony.one/${prefix ? `${prefix}/` : ''}${value}`;
 }
 
 export default Transactions;

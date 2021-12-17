@@ -100,7 +100,8 @@ module.exports = ({ NODE_ENV }) => {
             }),
             new DefinePlugin({
                 'process.env.NODE_ENV': JSON.stringify(NODE_ENV),
-                'process.env.RPC_URL': JSON.stringify(parsed.RPC_URL)
+                'process.env.HARMONY_RPC_URL': JSON.stringify(parsed.HARMONY_RPC_URL),
+                'process.env.HARMONY_CHAIN_ID': JSON.stringify(parsed.HARMONY_CHAIN_ID)
             }),
             new NodePolyfillPlugin(),
             new HtmlPlugin({
@@ -128,6 +129,7 @@ module.exports = ({ NODE_ENV }) => {
             runtimeChunk: 'single',
             splitChunks: {
                 chunks: 'all',
+                /*
                 cacheGroups: {
                     vendor: {
                         test: /[\\/]node_modules[\\/]/,
@@ -141,6 +143,7 @@ module.exports = ({ NODE_ENV }) => {
                         },
                     }
                 }
+                */
             },
         },
         devtool: 'source-map',

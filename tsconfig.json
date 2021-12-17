@@ -24,8 +24,11 @@
       "~context/*": [
         "src/context/*"
       ],
-      "~services/*": [
-        "src/services/*"
+      "~types/*": [
+        "src/types/*"
+      ],
+      "~utilities/*": [
+        "src/utilities/*"
       ]
     },
     "moduleResolution": "node",

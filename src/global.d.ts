@@ -23,7 +23,7 @@ declare module '*.svg' {
     export default path;
 }
 
-namespace NodeJS {
+declare namespace NodeJS {
     interface ProcessEnv {
         NODE_ENV: 'production' | 'development';
         HARMONY_RPC_URL: string;

@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import AccountsContext from '~context/Accounts/AccountsContext';
 import ProviderContext from '~context/Provider/ProviderContext';
-import harmony from '~services/harmony';
+import harmony from '~blockchain/harmony';
 import { HeroListProps } from './HeroList.types';
 
 function HeroList(props: HeroListProps): JSX.Element {

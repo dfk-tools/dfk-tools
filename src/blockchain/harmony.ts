@@ -1,5 +1,4 @@
 import { Harmony } from '@harmony-js/core';
-import { HttpProvider, Messenger } from '@harmony-js/network';
 import { ChainID, ChainType } from '@harmony-js/utils';
 
 const harmony = new Harmony(process.env.HARMONY_RPC_URL, {
